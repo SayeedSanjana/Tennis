@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>TENNIS </title>
+	<link rel="shortcut icon" href="1.png" type="image/x-icon">
+	<link rel="stylesheet" href="">
+	<style>
+		#center {
+         margin: auto;
+         
+         border: 3px solid green;
+         padding: 10px;
+         padding-bottom: 5px;
+         text-align:center;
+}
+#subButton {
+  background-color:#008CBA;; /* Green */
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+	</style>
+</head>
+<body>
+
+
+	<div id="center" class="input-group mb-3">
+        <input type="text" class="form-control" id="userInput" placeholder="Select Winning Score">
+        <!--<div class="input-group-append">-->
+          <button class="btn btn-secondary" id="subButton">Select Winning Score</button>
+        <!--</div>-->
+      </div> 
+	<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+	
+
+
+
+	<script>
+		var canvas;
+		var canvasContext;
+		var ballX=50;
+		var ballY=50;
+		var ballSpeedX=10;
+		var ballSpeedY=4;
+		var paddle1Y=250;
+		var paddle2Y=250;
+		var player1Score=0;
+		var player2Score=0;
+		const paddleHeight=100;
+		const paddleThickness=10;
+		var winningScore=0;
+		var showWinScreen=false;
+		var subButton;
+
+		function getInput() {
+       
+       }  
+
+           
+
+		function calculateMousePos(e){
+			var rect=canvas.getBoundingClientRect();//Basically getting the left,top,width,height of the boundary
+			var root=document.documentElement;//It will return the <html> element
+			var x = e.clientX;     // Get the horizontal coordinate
+            var y = e.clientY;     // Get the vertical coordinate
+            var mouseX=x-rect.left-root.scrollLeft;//rect.left and root scroolLeft is subtracted because we donot care where the black box present ie the position and we also donot care about the scroll whether its scroled let right top bottom .We only want to see the mouse press within the black region dont care if the black region made small big or moved up or down
+            var mouseY=y-rect.top-root.scrollTop;
+            return{
+                    x1:mouseX,
+                    y1:mouseY
+            }
+
+		}
+
+		function handleMouseClick(e){
+			if(showWinScreen){
+				player1Score=0;
+				player2Score=0;
+				showWinScreen=false;
+			}
+		}
+		window.onload=function(){
+			canvas=document.getElementById('gameCanvas');
+			canvasContext=canvas.getContext('2d');
+			subButton = document.getElementById('subButton');
+           subButton.addEventListener('click', function(e){
+           	winningScore = document.getElementById('userInput').value;
+                 console.log(winningScore);
+           });
+			var framePerSecond=30;
+			setInterval(callBoth,1000/framePerSecond);
+			canvas.addEventListener('mousedown',handleMouseClick);
+			canvas.addEventListener('mousemove',
+				function(e){
+					var mousePos=calculateMousePos(e);
+					paddle1Y=mousePos.y1-(paddleHeight/2);//only can move the mouse paddle vertically so getting the vertical count only not getting the horizontal count so took the value of y1 only
+
+				})
+		}
+			
+		
+		function ballReset(){
+
+			if(player1Score>=winningScore || player2Score>=winningScore){
+				
+				showWinScreen=true;
+			}
+			
+
+			//ballSpeedX=-(ballSpeedX)
+			//Basically if the ball miss the paddle  in the left then it will reset again from the center of the table
+			ballSpeedX=-(ballSpeedX);
+			ballX=canvas.width/2;//Its usally takes the ball towards the center of the canvas
+			ballY=canvas.height/2;//'''''''''
+		}
+
+		function callBoth(){
+			if(winningScore>0){
+
+			moveEverything();
+			drawEverything();
+		}
+
+		}
+        
+        function computerMovement(){
+			var paddle2YCenter=paddle2Y+(paddleHeight/2);
+            //35 is added or subtracted to ignore the continuos movement of the paddle only move the paddle when the ball is 35 px above or lower the paddle
+
+			//which means if the paddle has less value ie it is above the ball			
+			if (paddle2YCenter<(ballY-35)){//paddle2YCenter is used so that the ball hits the paddle not at the edges but at teh center
+				paddle2Y=paddle2Y+6;//Adding 6 so that the paddle is no more above and come downwards
+			}
+
+			//In this case if ball is above the paddle
+			else if (paddle2YCenter>(ballY+35)) {
+                    paddle2Y=paddle2Y-6;//subtract 6 to get the paddlle above
+			}
+		}
+		
+
+		function moveEverything(){
+			if(showWinScreen){
+				return;
+			}
+			computerMovement();
+			ballX=ballX+ballSpeedX;
+			ballY=ballY+ballSpeedY;
+
+			//If the ball comes to left and go more left ehen the distance becomes negative
+			if(ballX<0){
+				//ballSpeedX=-(ballSpeedX);//-(-ballspeed)
+				if (ballY>paddle1Y && ballY< paddle1Y+paddleHeight){
+					ballSpeedX=-(ballSpeedX);
+					var deltaY=ballY-(paddle1Y+paddleHeight/2);
+					ballSpeedY=deltaY*0.35;
+				}
+				else{
+				
+				player2Score=player2Score+1;//must be before ballReset()
+				ballReset();
+			}
+				
+			}
+			//If the ball crosses the windowscreen in the right
+			if(ballX>canvas.width){
+				//ballSpeedX=-(ballSpeedX);
+				if ( ballY >paddle2Y 
+					&& 
+					ballY<paddle2Y+paddleHeight){
+
+					ballSpeedX=-(ballSpeedX);
+					var deltaY=ballY-(paddle2Y+paddleHeight/2);
+					ballSpeedY=deltaY*0.35;
+				}
+				else{
+				
+				player1Score=player1Score+1;//must be before ballRset()
+				ballReset();
+			}
+			}
+			if(ballY<0){
+				ballSpeedY=-(ballSpeedY);//-(-ballspeed)
+				
+			}
+			if(ballY>canvas.height){
+				ballSpeedY=-(ballSpeedY);
+			}
+
+		}
+
+
+		function drawNet(){
+			for (var i=0;i<canvas.height;i+=40){
+				colorRect(canvas.width/2-1,i,2,20,'white');
+
+			}
+		}
+
+		
+
+		function drawEverything(){	
+		    //Makes the screen Black
+
+			colorRect(0,0,canvas.width,canvas.height,'black');
+
+
+
+			if(showWinScreen){
+				canvasContext.fillStyle='white';
+				if(player1Score>=winningScore ){
+					canvasContext.fillText('Player1 Won!!!',350,200);
+				}
+				else if(player2Score>=winningScore){
+					canvasContext.fillText('Player2 Won!!!',350,200);
+				}
+				
+				canvasContext.fillText('Click To Continue',350,500);
+				return;
+			}
+
+			drawNet();
+
+			//Makes the left palyer paddle
+			colorRect(0,paddle1Y,paddleThickness,paddleHeight,'white');
+
+			//Makes the right computer palyer paddle
+			colorRect(canvas.width-paddleThickness,paddle2Y,paddleThickness,paddleHeight,'white');
+			//Here in case of paadle2Y the x value will be not 0 because its not on the left rather the paddle will be on right so it should be 800px(canvas size) away but as the paddle width id 10 px so lets keep it (800-10)=790px
+
+			//Makes the ball
+			colorCircle(ballX,ballY,10,'white');
+			canvasContext.fillText('Player1: ',100,100);
+			canvasContext.fillText(player1Score,110,110);
+			canvasContext.fillText('Player2: ',canvas.width-100,100);
+			canvasContext.fillText(player2Score,canvas.width-90,110);
+		}
+
+		function colorCircle(centerX,centerY,radius,color){
+			canvasContext.fillStyle=color;
+			canvasContext.beginPath();//beginPath() will defines an shape
+			canvasContext.arc(centerX,centerY,radius,0,Math.PI*2,true);
+			//Here ballx and 100 are not the corner of the rectangle rather they are the center of the circle,
+			//10=radius
+			//0 and Math.PI are the angle and radian of the circle.If its only Math.PI then it will be the half circle so for the full circle it is being multiplied by 2
+			//If it is 'true' it is going to show the clockwise upper(top) portion but if 'false' going to show the lower (bottom)portion
+			canvasContext.fill();
+		}
+
+		function colorRect(leftX,topY,width,height,color){
+			canvasContext.fillStyle=color;
+			canvasContext.fillRect(leftX,topY,width,height);
+			
+
+		}
+	</script>
+</body>
+</html>
